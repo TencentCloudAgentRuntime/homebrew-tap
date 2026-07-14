@@ -1,0 +1,102 @@
+name: Update AGR CLI
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Formal AGR CLI release tag (vX.Y.Z)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-agr-cli
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate on ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-15
+          - macos-15-intel
+          - ubuntu-24.04-arm
+          - ubuntu-24.04
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Formula
+        run: scripts/update-agr-cli.sh "${{ inputs.version }}"
+
+      - name: Check update scope
+        run: |
+          if ! git diff --quiet; then
+            test "$(git diff --name-only)" = "Formula/agr-cli.rb"
+          fi
+
+      - name: Audit Formula
+        run: brew audit --strict TencentCloudAgentRuntime/tap/agr-cli
+
+      - name: Install and test Formula
+        env:
+          VERSION_TAG: ${{ inputs.version }}
+        run: |
+          brew install TencentCloudAgentRuntime/tap/agr-cli
+          version="${VERSION_TAG#v}"
+          agr version | grep -F "$version"
+          agr schema instance.create -o json | grep -F '"Name":"instance.create"'
+          brew test TencentCloudAgentRuntime/tap/agr-cli
+          brew uninstall agr-cli
+
+  commit:
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Formula
+        run: scripts/update-agr-cli.sh "${{ inputs.version }}"
+
+      - name: Check update scope
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          test "$(git diff --name-only)" = "Formula/agr-cli.rb"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Configure git
+        if: steps.changes.outputs.changed == 'true'
+        uses: Homebrew/actions/git-user-config@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+
+      - name: Commit update
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git add Formula/agr-cli.rb
+          git commit -m "chore: update agr-cli to ${VERSION}"
+
+      - name: Push update
+        if: steps.changes.outputs.changed == 'true'
+        uses: Homebrew/actions/git-try-push@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+        with:
+          branch: ${{ github.event.repository.default_branch }}
