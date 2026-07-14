@@ -32,6 +32,18 @@ class AgrCli < Formula
     bin.install "agr"
   end
 
+  def caveats
+    <<~EOS
+      AGR CLI is available as `agr`.
+
+      Get started:
+        agr --help
+
+      Verify the installed version:
+        agr version
+    EOS
+  end
+
   test do
     assert_match version.to_s, shell_output("#{bin}/agr version")
     assert_match '"Name":"instance.create"', shell_output("#{bin}/agr schema instance.create -o json")
