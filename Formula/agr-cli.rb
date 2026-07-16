@@ -1,30 +1,30 @@
 class AgrCli < Formula
   desc "CLI for Tencent Cloud Agent Runtime"
   homepage "https://github.com/TencentCloudAgentRuntime/ags-cli"
-  version "0.6.2"
+  version "0.6.3"
   license "Apache-2.0"
 
   on_macos do
     on_arm do
-      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.2/agr-0.6.2-darwin-arm64.tar.gz"
-      sha256 "07e3f225f71aa4fd7f675f503e2663a263dd3fdfdfa10e208518659b42484ad6"
+      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-darwin-arm64.tar.gz"
+      sha256 "66c1d90013dd0039584bf388592ed357dea3657a2a80a6c37c875a0d7c273c9e"
     end
 
     on_intel do
-      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.2/agr-0.6.2-darwin-amd64.tar.gz"
-      sha256 "0d94c7ecfc2fc251e49c90273154e132f11a7e0b6096cd60218a5c2d33961fcb"
+      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-darwin-amd64.tar.gz"
+      sha256 "2c01dce41f6863659057aa6468eeaad372f04a82d3230f2d0342a0e13dd2dd4f"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.2/agr-0.6.2-linux-arm64.tar.gz"
-      sha256 "293664bd4d8c9612b05e83d349fd047af0a0d24279bda576d1c2664c259fbae6"
+      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-linux-arm64.tar.gz"
+      sha256 "93b850f1a8b2825dc2d65587c49ebcaac589b227e326c44147f5df0848ac6036"
     end
 
     on_intel do
-      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.2/agr-0.6.2-linux-amd64.tar.gz"
-      sha256 "19797a581c37a8a9e151086eda13d2461fb2ba1bad7b7e1acdbc15dc15309679"
+      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-linux-amd64.tar.gz"
+      sha256 "eda763a330d56a77d36e47aab7fae0a63f77f6e63d6c035f79d80a9b5deffbd7"
     end
   end
 
