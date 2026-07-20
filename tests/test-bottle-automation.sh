@@ -188,7 +188,7 @@ test_bottle_workflows() {
   assert_contains "${update_workflow}" "branch: main"
   local push_step
   push_step="$(sed -n '/- name: Push Formula directly to main/,$p' "${update_workflow}")"
-  if grep -Fq 'token: ${{ steps.app-token.outputs.token }}' <<<"${push_step}"
+  if grep -Fq "token: \${{ steps.app-token.outputs.token }}" <<<"${push_step}"
   then
     fail "git-try-push must reuse setup-homebrew authentication"
   fi
