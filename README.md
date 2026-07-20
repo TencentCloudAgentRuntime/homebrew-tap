@@ -50,6 +50,12 @@ bottles, and commits the Formula directly to `main`. Protect `main` with a
 repository ruleset and grant bypass permission only to this GitHub App so human
 changes still require pull requests.
 
+GitHub creates the first Container registry package as private. After the first
+upload, a package administrator must make the `tap/agr-cli` package public,
+then select **Re-run failed jobs** on that same workflow run. This is a one-time
+setup. Bottle verification is intentionally anonymous, so the Formula cannot be
+pushed before regular Homebrew users can download the package.
+
 ## Documentation
 
 Run `brew help`, read `man brew`, or visit the
