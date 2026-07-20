@@ -67,7 +67,7 @@ do
   CHECKSUMS+=("$(printf '%s' "${checksum}" | tr '[:upper:]' '[:lower:]')")
 done
 
-ruby - "${FORMULA_PATH}" "${VERSION}" "${CHECKSUMS[@]}" <<'RUBY'
+brew ruby - "${FORMULA_PATH}" "${VERSION}" "${CHECKSUMS[@]}" <<'RUBY'
 formula_path, version, darwin_arm64, darwin_amd64, linux_arm64, linux_amd64 = ARGV
 formula = File.read(formula_path)
 

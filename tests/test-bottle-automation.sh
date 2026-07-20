@@ -39,7 +39,7 @@ test_update_script_removes_stale_bottle() {
   trap 'rm -rf "$test_dir"' RETURN
 
   local formula_path="${test_dir}/agr-cli.rb"
-  ruby - "${ROOT_DIR}/Formula/agr-cli.rb" "${formula_path}" <<'RUBY'
+  brew ruby - "${ROOT_DIR}/Formula/agr-cli.rb" "${formula_path}" <<'RUBY'
 source_path, target_path = ARGV
 formula = File.read(source_path)
 bottle = <<BOTTLE
@@ -97,7 +97,12 @@ done
 
 cp "$FIXTURE_DIR/$(basename "$url")" "$output"
 SH
-  chmod +x "${fake_bin}/curl"
+  cat >"${fake_bin}/ruby" <<'SH'
+#!/usr/bin/env bash
+echo "standalone ruby must not be used" >&2
+exit 99
+SH
+  chmod +x "${fake_bin}/curl" "${fake_bin}/ruby"
 
   PATH="${fake_bin}:${PATH}" \
     FIXTURE_DIR="${fixtures}" \
