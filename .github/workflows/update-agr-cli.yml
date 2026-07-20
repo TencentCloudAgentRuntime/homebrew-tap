@@ -141,7 +141,7 @@ jobs:
       - name: Build and test bottles
         env:
           HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
-        run: brew test-bot --only-formulae --testing-formulae=agr-cli --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap
+        run: brew test-bot --only-formulae --keep-old --testing-formulae=agr-cli --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Upload bottle artifacts
