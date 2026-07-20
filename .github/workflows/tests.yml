@@ -46,12 +46,16 @@ jobs:
 
       - name: Test Bottle automation
         run: tests/test-bottle-automation.sh all
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - run: brew test-bot --only-cleanup-before
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - run: brew test-bot --only-setup
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - run: brew test-bot --only-tap-syntax
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Base64-encode GITHUB_TOKEN for HOMEBREW_DOCKER_REGISTRY_TOKEN
         id: base64-encode
@@ -68,10 +72,11 @@ jobs:
         env:
           HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
         run: brew test-bot --only-formulae --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Upload bottles as artifact
         if: always() && github.event_name == 'pull_request'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bottles_${{ matrix.os }}
-          path: '*.bottle.*'
+          path: ${{ steps.set-up-homebrew.outputs.repository-path }}/*.bottle.*

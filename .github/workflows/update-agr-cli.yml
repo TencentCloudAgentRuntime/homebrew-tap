@@ -61,7 +61,7 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          formula_version="$(ruby -ne 'puts $1 if $_ =~ /^  version "([^"]+)"$/' Formula/agr-cli.rb)"
+          formula_version="$(sed -nE 's/^  version "([^"]+)"/\1/p' Formula/agr-cli.rb)"
           if [[ "$formula_version" == "${VERSION#v}" ]] && grep -Fxq "  bottle do" Formula/agr-cli.rb; then
             echo "already_published=true" >> "$GITHUB_OUTPUT"
           else
@@ -109,15 +109,20 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: scripts/update-agr-cli.sh "$VERSION"
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Check update scope
         run: test "$(git diff --name-only)" = "Formula/agr-cli.rb"
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - run: brew test-bot --only-cleanup-before
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - run: brew test-bot --only-setup
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - run: brew test-bot --only-tap-syntax
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Base64-encode GITHUB_TOKEN for HOMEBREW_DOCKER_REGISTRY_TOKEN
         id: base64-encode
@@ -132,13 +137,14 @@ jobs:
         env:
           HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
         run: brew test-bot --only-formulae --testing-formulae=agr-cli --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Upload bottle artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bottles_${{ matrix.os }}
-          path: '*.bottle.*'
+          path: ${{ steps.set-up-homebrew.outputs.repository-path }}/*.bottle.*
 
   publish:
     needs:
@@ -178,12 +184,13 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: scripts/update-agr-cli.sh "$VERSION"
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Download bottle artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: bottles_*
-          path: bottles
+          path: ${{ steps.set-up-homebrew.outputs.repository-path }}/bottles
           merge-multiple: true
 
       - name: Validate bottle artifacts
@@ -192,12 +199,14 @@ jobs:
           bottle_count="$(find bottles -maxdepth 1 -type f -name '*.bottle.tar.gz' | wc -l | tr -d ' ')"
           test "$json_count" = 4
           test "$bottle_count" = 4
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Merge bottle metadata into Formula
         run: |
           cd bottles
           brew bottle --merge --write --no-commit \
             --root-url="$BOTTLE_ROOT_URL" ./*.bottle.json
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Validate publish scope
         run: |
@@ -206,6 +215,7 @@ jobs:
           grep -Fq "root_url \"$BOTTLE_ROOT_URL\"" Formula/agr-cli.rb
           brew audit --strict TencentCloudAgentRuntime/tap/agr-cli
           brew test-bot --only-tap-syntax
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Set up git
         uses: Homebrew/actions/git-user-config@18fcb8e3e06b4247c676c506750dc95ea7226479 # 2026.07.13.1
@@ -216,6 +226,7 @@ jobs:
         run: |
           git add Formula/agr-cli.rb
           git commit -m "chore: update agr-cli to ${VERSION}"
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Upload bottles to GitHub Packages
         env:
@@ -226,6 +237,7 @@ jobs:
           cd bottles
           brew pr-upload --upload-only --warn-on-upload-failure \
             --root-url="$BOTTLE_ROOT_URL"
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Base64-encode GITHUB_TOKEN for bottle verification
         id: bottle-fetch-token
@@ -240,6 +252,7 @@ jobs:
         env:
           HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.bottle-fetch-token.outputs.token }}
         run: brew test-bot --only-bottles-fetch --testing-formulae=agr-cli
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Push Formula directly to main
         uses: Homebrew/actions/git-try-push@18fcb8e3e06b4247c676c506750dc95ea7226479 # 2026.07.13.1
