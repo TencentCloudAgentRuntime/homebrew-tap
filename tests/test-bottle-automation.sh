@@ -79,19 +79,8 @@ test_update_script_removes_stale_bottle() {
   trap 'rm -rf "$test_dir"' RETURN
 
   local formula_path="${test_dir}/agr-cli.rb"
-  brew ruby - "${ROOT_DIR}/Formula/agr-cli.rb" "${formula_path}" <<'RUBY'
-source_path, target_path = ARGV
-formula = File.read(source_path)
-bottle = <<BOTTLE
-
-  bottle do
-    root_url "https://ghcr.io/v2/tencentcloudagentruntime/tap"
-    sha256 cellar: :any_skip_relocation, arm64_tahoe: "#{'a' * 64}"
-  end
-BOTTLE
-formula.sub!(/^  license .*$/, "\\0#{bottle}") or abort "license declaration not found"
-File.write(target_path, formula)
-RUBY
+  brew ruby -e 'source_path, target_path = ARGV; formula = File.read(source_path); checksum = "a" * 64; bottle = %(\n  bottle do\n    root_url "https://ghcr.io/v2/tencentcloudagentruntime/tap"\n    sha256 cellar: :any_skip_relocation, arm64_tahoe: "#{checksum}"\n  end\n); updated = formula.include?("  bottle do\n") ? formula.sub!(/\n  bottle do\n.*?^  end\n/m, bottle) : formula.sub!(/^  license .*$/, "\\0#{bottle}"); abort "formula update failed" unless updated; File.write(target_path, formula)' \
+    "${ROOT_DIR}/Formula/agr-cli.rb" "${formula_path}"
 
   local fixtures="${test_dir}/fixtures"
   local fake_bin="${test_dir}/bin"
@@ -159,7 +148,9 @@ test_bottle_workflows() {
   local publish_workflow="${ROOT_DIR}/.github/workflows/publish.yml"
   local update_workflow="${ROOT_DIR}/.github/workflows/update-agr-cli.yml"
   local actionlint_config="${ROOT_DIR}/.github/actionlint.yaml"
+  local formula="${ROOT_DIR}/Formula/agr-cli.rb"
   local readme="${ROOT_DIR}/README.md"
+  local bottle_root_url="https://ghcr.io/v2/tencentcloudagentruntime/tap"
 
   assert_file "${tests_workflow}"
   assert_not_file "${publish_workflow}"
@@ -199,6 +190,15 @@ test_bottle_workflows() {
   assert_not_contains "${update_workflow}" "pull-requests: write"
   assert_not_contains "${update_workflow}" "gh pr create"
   assert_not_contains "${update_workflow}" "brew pr-pull"
+  assert_contains "${formula}" "  bottle do"
+  assert_contains "${formula}" "root_url \"${bottle_root_url}\""
+  local published_bottle_count
+  published_bottle_count="$(grep -Ec '^    sha256 cellar: :any_skip_relocation,' "${formula}")" || true
+  if [[ "${published_bottle_count}" -ne 4 ]]
+  then
+    fail "${formula} must contain four published bottle checksums"
+  fi
+  assert_not_contains "${formula}" "    rebuild "
   assert_contains "${readme}" "HOMEBREW_TAP_APP_ID"
   assert_contains "${readme}" "directly to \`main\`"
   assert_contains "${readme}" "make the \`tap/agr-cli\` package public"
