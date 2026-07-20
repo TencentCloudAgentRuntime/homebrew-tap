@@ -134,7 +134,7 @@ test_bottle_workflows() {
   assert_contains "${update_workflow}" "if [[ -n \"\${changed_files}\" && \"\${changed_files}\" != \"Formula/agr-cli.rb\" ]]; then"
   assert_contains "${update_workflow}" "unexpected update scope: \${changed_files}"
   assert_contains "${update_workflow}" "test \"\$(git diff --name-only)\" = \"Formula/agr-cli.rb\""
-  assert_contains "${update_workflow}" "brew test-bot --only-formulae --testing-formulae=agr-cli --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap"
+  assert_contains "${update_workflow}" "brew test-bot --only-formulae --keep-old --testing-formulae=agr-cli --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap"
   assert_contains "${update_workflow}" "path: \${{ steps.set-up-homebrew.outputs.repository-path }}/*.bottle.*"
   assert_contains "${update_workflow}" "path: \${{ steps.set-up-homebrew.outputs.repository-path }}/bottles"
   assert_contains "${update_workflow}" "actions/download-artifact@"
