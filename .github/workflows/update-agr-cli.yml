@@ -16,58 +16,39 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Validate on ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - macos-15
-          - macos-15-intel
-          - ubuntu-24.04-arm
-          - ubuntu-24.04
-    runs-on: ${{ matrix.os }}
+  create-update-pr:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Set up Homebrew
-        id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update Formula
-        run: scripts/update-agr-cli.sh "${{ inputs.version }}"
-
-      - name: Check update scope
+      - name: Validate Homebrew Tap app credentials
+        env:
+          APP_ID: ${{ vars.HOMEBREW_TAP_APP_ID }}
+          PRIVATE_KEY: ${{ secrets.HOMEBREW_TAP_APP_PRIVATE_KEY }}
         run: |
-          if ! git diff --quiet; then
-            test "$(git diff --name-only)" = "Formula/agr-cli.rb"
+          if [[ -z "$APP_ID" ]]; then
+            echo "HOMEBREW_TAP_APP_ID is not configured" >&2
+            exit 1
+          fi
+          if [[ -z "$PRIVATE_KEY" ]]; then
+            echo "HOMEBREW_TAP_APP_PRIVATE_KEY is not configured" >&2
+            exit 1
           fi
 
-      - name: Audit Formula
-        run: brew audit --strict TencentCloudAgentRuntime/tap/agr-cli
+      - name: Create Homebrew Tap app token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        with:
+          app-id: ${{ vars.HOMEBREW_TAP_APP_ID }}
+          private-key: ${{ secrets.HOMEBREW_TAP_APP_PRIVATE_KEY }}
+          owner: TencentCloudAgentRuntime
+          repositories: homebrew-tap
+          permission-contents: write
+          permission-pull-requests: write
 
-      - name: Install and test Formula
-        env:
-          VERSION_TAG: ${{ inputs.version }}
-        run: |
-          brew install TencentCloudAgentRuntime/tap/agr-cli
-          version="${VERSION_TAG#v}"
-          agr version | grep -F "$version"
-          agr schema instance.create -o json | grep -F '"Name":"instance.create"'
-          brew test TencentCloudAgentRuntime/tap/agr-cli
-          brew uninstall agr-cli
-
-  commit:
-    needs: validate
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    steps:
       - name: Set up Homebrew
         id: set-up-homebrew
-        uses: Homebrew/actions/setup-homebrew@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+        uses: Homebrew/actions/setup-homebrew@18fcb8e3e06b4247c676c506750dc95ea7226479 # 2026.07.13.1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Update Formula
         run: scripts/update-agr-cli.sh "${{ inputs.version }}"
@@ -83,20 +64,37 @@ jobs:
           test "$(git diff --name-only)" = "Formula/agr-cli.rb"
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
-      - name: Configure git
+      - name: Set up git
         if: steps.changes.outputs.changed == 'true'
-        uses: Homebrew/actions/git-user-config@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+        uses: Homebrew/actions/git-user-config@18fcb8e3e06b4247c676c506750dc95ea7226479 # 2026.07.13.1
 
       - name: Commit update
         if: steps.changes.outputs.changed == 'true'
         env:
           VERSION: ${{ inputs.version }}
         run: |
+          branch="update/agr-cli-${VERSION}-${GITHUB_RUN_ID}"
+          git switch -c "$branch"
           git add Formula/agr-cli.rb
           git commit -m "chore: update agr-cli to ${VERSION}"
+          echo "UPDATE_BRANCH=$branch" >> "$GITHUB_ENV"
 
-      - name: Push update
+      - name: Push update branch
         if: steps.changes.outputs.changed == 'true'
-        uses: Homebrew/actions/git-try-push@1f8e202ffddf94def7f42f6fa3a482e821489f9c # 2026.07.10.1
+        uses: Homebrew/actions/git-try-push@18fcb8e3e06b4247c676c506750dc95ea7226479 # 2026.07.13.1
         with:
-          branch: ${{ github.event.repository.default_branch }}
+          token: ${{ steps.app-token.outputs.token }}
+          branch: ${{ env.UPDATE_BRANCH }}
+
+      - name: Create update pull request
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh pr create \
+            --repo "$GITHUB_REPOSITORY" \
+            --base main \
+            --head "$UPDATE_BRANCH" \
+            --title "chore: update agr-cli to ${VERSION}" \
+            --body "Automated Formula update for AGR CLI ${VERSION}. The pull request checks build and test Homebrew bottles for each supported platform. After review and successful checks, publish it with the \`brew pr-pull\` workflow using this pull request number and reviewed head SHA."

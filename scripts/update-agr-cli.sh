@@ -65,6 +65,11 @@ ruby - "$FORMULA_PATH" "$VERSION" "${CHECKSUMS[@]}" <<'RUBY'
 formula_path, version, darwin_arm64, darwin_amd64, linux_arm64, linux_amd64 = ARGV
 formula = File.read(formula_path)
 
+bottle_pattern = /^  bottle do\n.*?^  end\n\n?/m
+bottle_blocks = formula.scan(bottle_pattern).length
+abort "expected at most one Formula bottle block, found #{bottle_blocks}" if bottle_blocks > 1
+formula.sub!(bottle_pattern, "")
+
 replacements = {
   /^  version ".*"$/ => %(  version "#{version}"),
   %r{^      url ".*/agr-.*-darwin-arm64\.tar\.gz"$} => %(      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v#{version}/agr-#{version}-darwin-arm64.tar.gz"),
