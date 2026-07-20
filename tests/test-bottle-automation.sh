@@ -89,7 +89,11 @@ bottle = <<BOTTLE
     sha256 cellar: :any_skip_relocation, arm64_tahoe: "#{'a' * 64}"
   end
 BOTTLE
-formula.sub!(/^  license .*$/, "\\0#{bottle}") or abort "license declaration not found"
+if formula.include?("  bottle do\n")
+  formula.sub!(/\n  bottle do\n.*?^  end\n/m, bottle) or abort "bottle block not found"
+else
+  formula.sub!(/^  license .*$/, "\\0#{bottle}") or abort "license declaration not found"
+end
 File.write(target_path, formula)
 RUBY
 
@@ -159,7 +163,9 @@ test_bottle_workflows() {
   local publish_workflow="${ROOT_DIR}/.github/workflows/publish.yml"
   local update_workflow="${ROOT_DIR}/.github/workflows/update-agr-cli.yml"
   local actionlint_config="${ROOT_DIR}/.github/actionlint.yaml"
+  local formula="${ROOT_DIR}/Formula/agr-cli.rb"
   local readme="${ROOT_DIR}/README.md"
+  local bottle_root_url="https://ghcr.io/v2/tencentcloudagentruntime/tap"
 
   assert_file "${tests_workflow}"
   assert_not_file "${publish_workflow}"
@@ -199,6 +205,13 @@ test_bottle_workflows() {
   assert_not_contains "${update_workflow}" "pull-requests: write"
   assert_not_contains "${update_workflow}" "gh pr create"
   assert_not_contains "${update_workflow}" "brew pr-pull"
+  assert_contains "${formula}" "  bottle do"
+  assert_contains "${formula}" "root_url \"${bottle_root_url}\""
+  if [[ "$(grep -Ec '^    sha256 cellar: :any_skip_relocation,' "${formula}")" -ne 4 ]]
+  then
+    fail "${formula} must contain four published bottle checksums"
+  fi
+  assert_not_contains "${formula}" "    rebuild "
   assert_contains "${readme}" "HOMEBREW_TAP_APP_ID"
   assert_contains "${readme}" "directly to \`main\`"
   assert_contains "${readme}" "make the \`tap/agr-cli\` package public"

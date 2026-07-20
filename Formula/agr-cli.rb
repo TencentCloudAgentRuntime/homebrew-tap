@@ -4,6 +4,14 @@ class AgrCli < Formula
   version "0.6.3"
   license "Apache-2.0"
 
+  bottle do
+    root_url "https://ghcr.io/v2/tencentcloudagentruntime/tap"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe:  "444214c0ad4ddac1047fce0fe740c412ccab1702aed871c77e4102a98fa2c852"
+    sha256 cellar: :any_skip_relocation, sequoia:      "8970dd4aba13cc32a649842a8e8f87d4b2f8c3861b55a38720b72d85ad1d9334"
+    sha256 cellar: :any_skip_relocation, arm64_linux:  "52a25f680e84bc4f25ba1762c569fa7c67d68fc15a8128715f1c034f6b4a5cac"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "a1f840ecfc84d6431c8ec20f996af7bda6ed8e82c806ab47187c0f9814b967c3"
+  end
+
   on_macos do
     on_arm do
       url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-darwin-arm64.tar.gz"
