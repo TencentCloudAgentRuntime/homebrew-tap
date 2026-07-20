@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BOTTLE_ROOT_URL: https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap
+  BOTTLE_ROOT_URL: https://ghcr.io/v2/tencentcloudagentruntime/tap
 
 jobs:
   prepare:
@@ -141,7 +141,7 @@ jobs:
       - name: Build and test bottles
         env:
           HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
-        run: brew test-bot --only-formulae --keep-old --testing-formulae=agr-cli --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap
+        run: brew test-bot --only-formulae --keep-old --testing-formulae=agr-cli --root-url="$BOTTLE_ROOT_URL"
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Upload bottle artifacts
@@ -199,11 +199,10 @@ jobs:
           merge-multiple: true
 
       - name: Validate bottle artifacts
+        env:
+          VERSION: ${{ inputs.version }}
         run: |
-          json_count="$(find bottles -maxdepth 1 -type f -name '*.bottle.json' | wc -l | tr -d ' ')"
-          bottle_count="$(find bottles -maxdepth 1 -type f -name '*.bottle.tar.gz' | wc -l | tr -d ' ')"
-          test "$json_count" = 4
-          test "$bottle_count" = 4
+          scripts/validate-bottle-artifacts.sh bottles "$VERSION" "$BOTTLE_ROOT_URL"
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Merge bottle metadata into Formula
@@ -244,18 +243,7 @@ jobs:
             --root-url="$BOTTLE_ROOT_URL"
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
-      - name: Base64-encode GITHUB_TOKEN for bottle verification
-        id: bottle-fetch-token
-        env:
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          base64_token=$(echo -n "${TOKEN}" | base64 | tr -d "\n")
-          echo "::add-mask::${base64_token}"
-          echo "token=${base64_token}" >> "${GITHUB_OUTPUT}"
-
-      - name: Verify published bottles
-        env:
-          HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.bottle-fetch-token.outputs.token }}
+      - name: Verify bottles are publicly downloadable
         run: brew test-bot --only-bottles-fetch --testing-formulae=agr-cli
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 

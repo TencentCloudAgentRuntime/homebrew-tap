@@ -6,6 +6,9 @@ on:
       - main
   pull_request:
 
+env:
+  BOTTLE_ROOT_URL: https://ghcr.io/v2/tencentcloudagentruntime/tap
+
 jobs:
   test-bot:
     strategy:
@@ -71,7 +74,7 @@ jobs:
         if: github.event_name == 'pull_request'
         env:
           HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
-        run: brew test-bot --only-formulae --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap
+        run: brew test-bot --only-formulae --root-url="$BOTTLE_ROOT_URL"
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Upload bottles as artifact
