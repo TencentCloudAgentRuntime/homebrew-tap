@@ -186,6 +186,12 @@ test_bottle_workflows() {
   assert_contains "${update_workflow}" "permission-contents: write"
   assert_contains "${update_workflow}" "HOMEBREW_TAP_APP_PRIVATE_KEY is not configured"
   assert_contains "${update_workflow}" "branch: main"
+  local push_step
+  push_step="$(sed -n '/- name: Push Formula directly to main/,$p' "${update_workflow}")"
+  if grep -Fq "token: \${{ steps.app-token.outputs.token }}" <<<"${push_step}"
+  then
+    fail "git-try-push must reuse setup-homebrew authentication"
+  fi
   assert_contains "${update_workflow}" "brew test-bot --only-bottles-fetch --testing-formulae=agr-cli"
   assert_contains "${update_workflow}" "scripts/validate-bottle-artifacts.sh bottles \"\$VERSION\" \"\$BOTTLE_ROOT_URL\""
   assert_not_contains "${update_workflow}" "Base64-encode GITHUB_TOKEN for bottle verification"
