@@ -29,6 +29,27 @@ brew "agr-cli"
 - [`agr-cli`](https://github.com/TencentCloudAgentRuntime/ags-cli) — CLI for
   Tencent Cloud Agent Runtime. Installs the `agr` command.
 
+## Maintainer release flow
+
+Formal AGR CLI releases dispatch the `Update AGR CLI` workflow. The workflow
+validates the formal GitHub Release, updates the Formula, and uses
+`brew test-bot` to build and test bottles for the supported macOS and Linux
+platforms.
+
+The GitHub App used by the update workflow must be installed on this repository
+with **Contents: read and write**. Configure its credentials as below, and
+retain **Actions: read and write** for the release workflow that dispatches the
+update:
+
+- Repository variable `HOMEBREW_TAP_APP_ID`
+- Repository secret `HOMEBREW_TAP_APP_PRIVATE_KEY`
+
+After every platform succeeds, the workflow publishes the bottles to GitHub
+Packages, writes the generated `bottle do` block, verifies the published
+bottles, and commits the Formula directly to `main`. Protect `main` with a
+repository ruleset and grant bypass permission only to this GitHub App so human
+changes still require pull requests.
+
 ## Documentation
 
 Run `brew help`, read `man brew`, or visit the
