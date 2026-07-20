@@ -14,6 +14,10 @@ assert_file() {
   [[ -f "$1" ]] || fail "missing file: $1"
 }
 
+assert_not_file() {
+  [[ ! -e "$1" ]] || fail "unexpected file: $1"
+}
+
 assert_contains() {
   local file="$1"
   local text="$2"
@@ -108,20 +112,26 @@ test_bottle_workflows() {
   local readme="$ROOT_DIR/README.md"
 
   assert_file "$tests_workflow"
-  assert_file "$publish_workflow"
+  assert_not_file "$publish_workflow"
   assert_contains "$tests_workflow" "tests/test-bottle-automation.sh all"
-  assert_contains "$tests_workflow" "brew test-bot --only-formulae --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap"
-  assert_contains "$tests_workflow" "path: '*.bottle.*'"
-  assert_contains "$tests_workflow" "packages: read"
-  assert_contains "$publish_workflow" "packages: write"
-  assert_contains "$publish_workflow" "brew pr-pull --debug --tap=\"\$GITHUB_REPOSITORY\""
-  assert_contains "$update_workflow" "pull-requests: write"
+  assert_contains "$update_workflow" "gh api repos/TencentCloudAgentRuntime/ags-cli/releases/tags/\"\$VERSION\""
+  assert_contains "$update_workflow" "brew test-bot --only-formulae --testing-formulae=agr-cli --root-url=https://ghcr.io/v2/tencentcloudagentruntime/homebrew-tap"
+  assert_contains "$update_workflow" "path: '*.bottle.*'"
+  assert_contains "$update_workflow" "actions/download-artifact@"
+  assert_contains "$update_workflow" "brew bottle --merge --write --no-commit"
+  assert_contains "$update_workflow" "brew pr-upload --upload-only"
+  assert_contains "$update_workflow" "packages: write"
   assert_contains "$update_workflow" "actions/create-github-app-token@"
+  assert_contains "$update_workflow" "permission-contents: write"
   assert_contains "$update_workflow" "HOMEBREW_TAP_APP_PRIVATE_KEY is not configured"
-  assert_contains "$update_workflow" "gh pr create"
-  assert_not_contains "$update_workflow" "branch: \${{ github.event.repository.default_branch }}"
+  assert_contains "$update_workflow" "branch: main"
+  assert_contains "$update_workflow" "brew test-bot --only-bottles-fetch --testing-formulae=agr-cli"
+  assert_not_contains "$update_workflow" "pull-requests: write"
+  assert_not_contains "$update_workflow" "gh pr create"
+  assert_not_contains "$update_workflow" "brew pr-pull"
   assert_contains "$readme" "HOMEBREW_TAP_APP_ID"
-  assert_contains "$readme" "brew pr-pull"
+  assert_contains "$readme" "directly to \`main\`"
+  assert_not_contains "$readme" "brew pr-pull"
 }
 
 case "${1:-all}" in
