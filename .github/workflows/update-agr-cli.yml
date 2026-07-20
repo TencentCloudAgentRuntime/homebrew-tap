@@ -250,5 +250,4 @@ jobs:
       - name: Push Formula directly to main
         uses: Homebrew/actions/git-try-push@18fcb8e3e06b4247c676c506750dc95ea7226479 # 2026.07.13.1
         with:
-          token: ${{ steps.app-token.outputs.token }}
           branch: main
