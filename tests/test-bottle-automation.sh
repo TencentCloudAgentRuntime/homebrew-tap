@@ -73,13 +73,13 @@ create_bottle_fixtures() {
   done
 }
 
-test_update_script_removes_stale_bottle() {
+test_update_script_removes_stale_bottle_and_version() {
   local test_dir
   test_dir="$(mktemp -d)"
   trap 'rm -rf "$test_dir"' RETURN
 
   local formula_path="${test_dir}/agr-cli.rb"
-  brew ruby -e 'source_path, target_path = ARGV; formula = File.read(source_path); checksum = "a" * 64; bottle = %(\n  bottle do\n    root_url "https://ghcr.io/v2/tencentcloudagentruntime/tap"\n    sha256 cellar: :any_skip_relocation, arm64_tahoe: "#{checksum}"\n  end\n); updated = formula.include?("  bottle do\n") ? formula.sub!(/\n  bottle do\n.*?^  end\n/m, bottle) : formula.sub!(/^  license .*$/, "\\0#{bottle}"); abort "formula update failed" unless updated; File.write(target_path, formula)' \
+  brew ruby -e 'source_path, target_path = ARGV; formula = File.read(source_path); formula.sub!(/^  license .*$/, %(  version "0.6.3"\n\\0)) unless formula.match?(/^  version /); checksum = "a" * 64; bottle = %(\n  bottle do\n    root_url "https://ghcr.io/v2/tencentcloudagentruntime/tap"\n    sha256 cellar: :any_skip_relocation, arm64_tahoe: "#{checksum}"\n  end\n); updated = formula.include?("  bottle do\n") ? formula.sub!(/\n  bottle do\n.*?^  end\n/m, bottle) : formula.sub!(/^  license .*$/, "\\0#{bottle}"); abort "formula update failed" unless updated; File.write(target_path, formula)' \
     "${ROOT_DIR}/Formula/agr-cli.rb" "${formula_path}"
 
   local fixtures="${test_dir}/fixtures"
@@ -138,7 +138,7 @@ SH
     FORMULA_PATH="${formula_path}" \
     "${ROOT_DIR}/scripts/update-agr-cli.sh" v0.6.4
 
-  assert_contains "${formula_path}" '  version "0.6.4"'
+  assert_not_contains "${formula_path}" '  version "'
   assert_contains "${formula_path}" '/v0.6.4/agr-0.6.4-darwin-arm64.tar.gz"'
   assert_not_contains "${formula_path}" "bottle do"
 }
@@ -192,6 +192,7 @@ test_bottle_workflows() {
   assert_not_contains "${update_workflow}" "brew pr-pull"
   assert_contains "${formula}" "  bottle do"
   assert_contains "${formula}" "root_url \"${bottle_root_url}\""
+  assert_not_contains "${formula}" '  version "'
   local published_bottle_count
   published_bottle_count="$(grep -Ec '^    sha256 cellar: :any_skip_relocation,' "${formula}")" || true
   if [[ "${published_bottle_count}" -ne 4 ]]
@@ -236,7 +237,7 @@ test_bottle_artifact_validation_rejects_bad_checksum() {
 
 case "${1:-all}" in
   script)
-    test_update_script_removes_stale_bottle
+    test_update_script_removes_stale_bottle_and_version
     ;;
   workflows)
     test_bottle_workflows
@@ -246,7 +247,7 @@ case "${1:-all}" in
     test_bottle_artifact_validation_rejects_bad_checksum
     ;;
   all)
-    test_update_script_removes_stale_bottle
+    test_update_script_removes_stale_bottle_and_version
     test_bottle_workflows
     test_bottle_artifact_validation
     test_bottle_artifact_validation_rejects_bad_checksum

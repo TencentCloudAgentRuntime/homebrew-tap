@@ -1,7 +1,6 @@
 class AgrCli < Formula
   desc "CLI for Tencent Cloud Agent Runtime"
   homepage "https://github.com/TencentCloudAgentRuntime/ags-cli"
-  version "0.6.3"
   license "Apache-2.0"
 
   bottle do

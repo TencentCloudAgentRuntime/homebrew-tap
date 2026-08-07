@@ -76,8 +76,12 @@ bottle_blocks = formula.scan(bottle_pattern).length
 abort "expected at most one Formula bottle block, found #{bottle_blocks}" if bottle_blocks > 1
 formula.sub!(bottle_pattern, "")
 
+version_pattern = /^  version ".*"$/
+version_lines = formula.scan(version_pattern).length
+abort "expected at most one Formula version line, found #{version_lines}" if version_lines > 1
+formula.sub!(/^  version ".*"\n/, "")
+
 replacements = {
-  /^  version ".*"$/ => %(  version "#{version}"),
   %r{^      url ".*/agr-.*-darwin-arm64\.tar\.gz"$} => %(      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v#{version}/agr-#{version}-darwin-arm64.tar.gz"),
   %r{^      url ".*/agr-.*-darwin-amd64\.tar\.gz"$} => %(      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v#{version}/agr-#{version}-darwin-amd64.tar.gz"),
   %r{^      url ".*/agr-.*-linux-arm64\.tar\.gz"$} => %(      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v#{version}/agr-#{version}-linux-arm64.tar.gz"),
