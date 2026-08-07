@@ -5,33 +5,33 @@ class AgrCli < Formula
 
   bottle do
     root_url "https://ghcr.io/v2/tencentcloudagentruntime/tap"
-    sha256 cellar: :any_skip_relocation, arm64_tahoe:  "444214c0ad4ddac1047fce0fe740c412ccab1702aed871c77e4102a98fa2c852"
-    sha256 cellar: :any_skip_relocation, sequoia:      "8970dd4aba13cc32a649842a8e8f87d4b2f8c3861b55a38720b72d85ad1d9334"
-    sha256 cellar: :any_skip_relocation, arm64_linux:  "52a25f680e84bc4f25ba1762c569fa7c67d68fc15a8128715f1c034f6b4a5cac"
-    sha256 cellar: :any_skip_relocation, x86_64_linux: "a1f840ecfc84d6431c8ec20f996af7bda6ed8e82c806ab47187c0f9814b967c3"
+    sha256 cellar: :any_skip_relocation, arm64_tahoe:  "60cd9e08f68865ebd02fc9ceb19e34b40aee317166e6747635c54babf606208c"
+    sha256 cellar: :any_skip_relocation, sequoia:      "2586d78151947d8b06d31f03012449a9b06de9677ef86623653d664e4ab93bf9"
+    sha256 cellar: :any_skip_relocation, arm64_linux:  "34d424845d47991abbbac90f85cceef4f92d7e75530bcadc80adb975be70732d"
+    sha256 cellar: :any_skip_relocation, x86_64_linux: "78b85193b64373fb0e81a0b7a62d1bc67d0a6a89bc4cadbe66a26baa028ba4b0"
   end
 
   on_macos do
     on_arm do
-      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-darwin-arm64.tar.gz"
-      sha256 "66c1d90013dd0039584bf388592ed357dea3657a2a80a6c37c875a0d7c273c9e"
+      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.4/agr-0.6.4-darwin-arm64.tar.gz"
+      sha256 "8760f213160a365ef0471d7de28fa30eedf5c27af38d2fcc09b28fe79722e491"
     end
 
     on_intel do
-      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-darwin-amd64.tar.gz"
-      sha256 "2c01dce41f6863659057aa6468eeaad372f04a82d3230f2d0342a0e13dd2dd4f"
+      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.4/agr-0.6.4-darwin-amd64.tar.gz"
+      sha256 "e54a6a380e1de145023a117efa33f35bc1646e918ad20c650567250f4d341fa9"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-linux-arm64.tar.gz"
-      sha256 "93b850f1a8b2825dc2d65587c49ebcaac589b227e326c44147f5df0848ac6036"
+      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.4/agr-0.6.4-linux-arm64.tar.gz"
+      sha256 "961347168672bf1721e2f8157be1d41f2f613b7fca636f007dab9a2d79ede035"
     end
 
     on_intel do
-      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.3/agr-0.6.3-linux-amd64.tar.gz"
-      sha256 "eda763a330d56a77d36e47aab7fae0a63f77f6e63d6c035f79d80a9b5deffbd7"
+      url "https://github.com/TencentCloudAgentRuntime/ags-cli/releases/download/v0.6.4/agr-0.6.4-linux-amd64.tar.gz"
+      sha256 "6dcf4843d7c71fe65410a6904f11ca8dff1dfd101b736eed0b210c7e4b02fe96"
     end
   end
 
