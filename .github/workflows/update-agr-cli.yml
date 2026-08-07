@@ -61,8 +61,8 @@ jobs:
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          formula_version="$(sed -nE 's/^  version "([^"]+)"/\1/p' Formula/agr-cli.rb)"
-          if [[ "$formula_version" == "${VERSION#v}" ]] && grep -Fxq "  bottle do" Formula/agr-cli.rb; then
+          formula_url_count="$(grep -Ec "/releases/download/${VERSION}/agr-${VERSION#v}-(darwin|linux)-(arm64|amd64)\\.tar\\.gz" Formula/agr-cli.rb || true)"
+          if [[ "$formula_url_count" -eq 4 ]] && grep -Fxq "  bottle do" Formula/agr-cli.rb; then
             echo "already_published=true" >> "$GITHUB_OUTPUT"
           else
             echo "already_published=false" >> "$GITHUB_OUTPUT"
@@ -112,6 +112,7 @@ jobs:
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Check update scope
+        shell: bash
         run: |
           changed_files="$(git diff --name-only)"
           if [[ -n "${changed_files}" && "${changed_files}" != "Formula/agr-cli.rb" ]]; then
