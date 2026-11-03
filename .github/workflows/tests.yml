@@ -6,10 +6,16 @@ on:
       - main
   pull_request:
 
+# Superseded PR runs are cancelled; every main commit gets its own group so it always runs to completion.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   BOTTLE_ROOT_URL: https://ghcr.io/v2/tencentcloudagentruntime/tap
 
 jobs:
+  # Docs-only changes are skipped per step, not via `paths-ignore`, so the required checks still report.
   test-bot:
     strategy:
       fail-fast: false
@@ -40,7 +46,51 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Detect changes
+        id: changes
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          MATRIX_OS: ${{ matrix.os }}
+        run: |
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            base="HEAD^1"
+          else
+            base="$PUSH_BEFORE"
+          fi
+
+          formula=true
+          docs_only=false
+          if [[ -n "$base" ]] && changed="$(git diff --name-only "$base" HEAD 2>/dev/null)"; then
+            echo "Changed files:"
+            echo "$changed"
+            grep -q '^Formula/' <<<"$changed" || formula=false
+            if [[ -n "$changed" ]] && ! grep -qvE '(\.md|^LICENSE)$' <<<"$changed"; then
+              docs_only=true
+            fi
+          else
+            echo "Unable to diff against '${base}'; running every check."
+          fi
+
+          build=false
+          [[ "$EVENT_NAME" == "pull_request" && "$formula" == "true" ]] && build=true
+          syntax=false
+          [[ "$MATRIX_OS" == "ubuntu-24.04" && "$docs_only" == "false" ]] && syntax=true
+          setup=false
+          [[ "$build" == "true" || "$syntax" == "true" ]] && setup=true
+
+          {
+            echo "docs_only=${docs_only}"
+            echo "build=${build}"
+            echo "syntax=${syntax}"
+            echo "setup=${setup}"
+          } | tee -a "$GITHUB_OUTPUT"
+        working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
+
+      # macOS caches never hit (PR-scoped saves, reservation races), so only Linux keeps one.
       - name: Cache Homebrew Bundler RubyGems
+        if: runner.os == 'Linux' && steps.changes.outputs.setup == 'true'
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.set-up-homebrew.outputs.gems-path }}
@@ -48,23 +98,26 @@ jobs:
           restore-keys: ${{ matrix.os }}-rubygems-
 
       - name: Test Bottle automation
+        if: steps.changes.outputs.docs_only == 'false'
         run: tests/test-bottle-automation.sh all
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - run: brew test-bot --only-cleanup-before
+        if: steps.changes.outputs.setup == 'true'
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - run: brew test-bot --only-setup
+        if: steps.changes.outputs.setup == 'true'
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       # Platform-independent; on Intel macOS `brew style` builds shfmt and go from source.
       - run: brew test-bot --only-tap-syntax
-        if: matrix.os == 'ubuntu-24.04'
+        if: steps.changes.outputs.syntax == 'true'
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Base64-encode GITHUB_TOKEN for HOMEBREW_DOCKER_REGISTRY_TOKEN
         id: base64-encode
-        if: github.event_name == 'pull_request'
+        if: steps.changes.outputs.build == 'true'
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -73,14 +126,14 @@ jobs:
           echo "token=${base64_token}" >> "${GITHUB_OUTPUT}"
 
       - name: Build and test bottles
-        if: github.event_name == 'pull_request'
+        if: steps.changes.outputs.build == 'true'
         env:
           HOMEBREW_DOCKER_REGISTRY_TOKEN: ${{ steps.base64-encode.outputs.token }}
         run: brew test-bot --only-formulae --root-url="$BOTTLE_ROOT_URL"
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Upload bottles as artifact
-        if: always() && github.event_name == 'pull_request'
+        if: always() && steps.changes.outputs.build == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bottles_${{ matrix.os }}
