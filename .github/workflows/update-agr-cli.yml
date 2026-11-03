@@ -223,6 +223,7 @@ jobs:
           grep -Fxq "  bottle do" Formula/agr-cli.rb
           grep -Fq "root_url \"$BOTTLE_ROOT_URL\"" Formula/agr-cli.rb
           brew audit --strict TencentCloudAgentRuntime/tap/agr-cli
+          brew test-bot --only-tap-syntax
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Set up git
