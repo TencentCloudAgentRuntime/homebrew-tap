@@ -46,7 +46,7 @@ class AgrCli < Formula
       Get started:
         agr --help
 
-      Verify the installed version:
+      Check the installed version:
         agr version
     EOS
   end
