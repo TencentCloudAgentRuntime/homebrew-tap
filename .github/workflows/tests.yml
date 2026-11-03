@@ -57,7 +57,9 @@ jobs:
       - run: brew test-bot --only-setup
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
+      # Platform-independent; on Intel macOS `brew style` builds shfmt and go from source.
       - run: brew test-bot --only-tap-syntax
+        if: matrix.os == 'ubuntu-24.04'
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
       - name: Base64-encode GITHUB_TOKEN for HOMEBREW_DOCKER_REGISTRY_TOKEN
