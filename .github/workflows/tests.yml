@@ -97,8 +97,8 @@ jobs:
           key: ${{ matrix.os }}-rubygems-${{ steps.set-up-homebrew.outputs.gems-hash }}
           restore-keys: ${{ matrix.os }}-rubygems-
 
+      # Always runs: it also asserts README content the release flow depends on.
       - name: Test Bottle automation
-        if: steps.changes.outputs.docs_only == 'false'
         run: tests/test-bottle-automation.sh all
         working-directory: ${{ steps.set-up-homebrew.outputs.repository-path }}
 
